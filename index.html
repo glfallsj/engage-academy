@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENGAGE ACADEMY - Interactive Learning Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@400;500;600;700&display=swap');
+        
+        .nexus-font { font-family: 'Orbitron', monospace; }
+        .ui-font { font-family: 'Exo 2', sans-serif; }
+        
+        .nexus-glow { 
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
+            animation: nexus-pulse 3s infinite;
+        }
+        
+        @keyframes nexus-pulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 255, 0.8), 0 0 80px rgba(0, 255, 255, 0.5); }
+        }
+        
+        .character-flame {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, #ff6b35 0%, #f7931e 30%, #ffcc02 60%, #fff200 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: relative;
+            animation: flame-dance 2s ease-in-out infinite alternate;
+            filter: drop-shadow(0 0 20px rgba(255, 107, 53, 0.8));
+        }
+        
+        .character-flame::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 15%;
+            width: 70%;
+            height: 70%;
+            background: radial-gradient(circle, #ff8c42 0%, #ffd23f  50%, transparent 70%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            animation: inner-flame 1.5s ease-in-out infinite alternate;
+        }
+        
+        .character-flame.level-2 {
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle, #ff4757 0%, #ff6b35 30%, #f7931e 60%, #ffcc02 100%);
+        }
+        
+        .character-flame.level-3 {
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, #e74c3c 0%, #ff4757 20%, #ff6b35 40%, #f7931e 70%, #ffcc02 100%);
+        }
+        
+        .character-flame.level-5 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, #8e44ad 0%, #e74c3c 20%, #ff4757 40%, #ff6b35 60%, #f7931e 80%, #ffcc02 100%);
+            filter: drop-shadow(0 0 30px rgba(142, 68, 173, 0.9));
+        }
+        
+        @keyframes flame-dance {
+            0% { transform: rotate(-2deg) scale(1); }
+            100% { transform: rotate(2deg) scale(1.05); }
+        }
+        
+        @keyframes inner-flame {
+            0% { transform: scale(0.9) rotate(1deg); }
+            100% { transform: scale(1.1) rotate(-1deg); }
+        }
+        
+        .xp-bar {
+            background: linear-gradient(90deg, #00d4aa 0%, #00f5ff  50%, #0099ff 100%);
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+        }
+        
+        .game-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 255, 255, 0.3);
+            border-color: rgba(0, 255, 255, 0.5);
+        }
+        
+        .badge {
+            animation: badge-shine 3s infinite;
+        }
+        
+        @keyframes badge-shine {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3) drop-shadow(0 0 10px currentColor); }
+        }
+        
+        .streak-fire {
+            animation: streak-burn 1s infinite alternate;
+        }
+        
+        @keyframes streak-burn {
+            0% { filter: hue-rotate(0deg) brightness(1); }
+            100% { filter: hue-rotate(20deg) brightness(1.2); }
+        }
+        
+        .coin-3d {
+            background: linear-gradient(45deg, #ffd700 0%, #ffed4e 50%, #fff200 100%);
+            border-radius: 50%;
+            position: relative;
+            animation: coin-flip 3s linear infinite;
+        }
+        
+        @keyframes coin-flip {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(180deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        
+        .notification {
+            animation: notification-slide 0.5s ease-out;
+        }
+        
+        @keyframes notification-slide {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .game-screen {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        }
+
+        .question-card {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .answer-option {
+            transition: all 0.3s ease;
+            background: rgba(51, 65, 85, 0.6);
+            border: 2px solid transparent;
+        }
+
+        .answer-option:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .answer-option.correct {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: #22c55e;
+        }
+
+        .answer-option.incorrect {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: #ef4444;
+        }
+
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring-circle {
+            stroke-dasharray: 251.2;
+            stroke-dashoffset: 251.2;
+            transition: stroke-dashoffset 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 min-h-screen ui-font overflow-x-hidden">
+    <!-- Animated Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div class="absolute top-3/4 right-1/4 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
+        <div class="absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 relative z-10">
+        <div class="bg-gray-800/90 backdrop-blur-lg rounded-3xl p-8 max-w-md w-full border border-cyan-500/30 nexus-glow">
+            <div class="text-center mb-8">
+                <div class="character-flame mx-auto mb-4"></div>
+                <h1 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 nexus-font mb-2">ENGAGE</h1>
+                <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 nexus-font mb-1">ACADEMY</h2>
+                <p class="text-cyan-300">Interactive Learning Platform</p>
+                <p class="text-sm text-gray-400 mt-2">Master Skills Through Gaming</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-cyan-300 mb-2 font-semibold">Student Email</label>
+                    <input type="email" id="email" class="w-full p-4 bg-gray-700/50 border border-cyan-500/30 rounded-xl text-white focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-all" placeholder="Enter your email" value="demo@engage.academy">
+                </div>
+                <div>
+                    <label class="block text-cyan-300 mb-2 font-semibold">Password</label>
+                    <input type="password" id="password" class="w-full p-4 bg-gray-700/50 border border-cyan-500/30 rounded-xl text-white focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20 transition-all" placeholder="Enter password" value="demo123">
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button onclick="login()" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-105 nexus-font">
+                        SIGN IN
+                    </button>
+                    <button onclick="register()" class="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-105 nexus-font">
+                        REGISTER
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-6 p-4 bg-gray-700/30 rounded-xl border border-gray-600/30">
+                <p class="text-sm text-cyan-300 mb-2 font-semibold">Demo Access:</p>
+                <p class="text-xs text-gray-400">Email: demo@engage.academy</p>
+                <p class="text-xs text-gray-400">Password: demo123</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Hub -->
+    <div id="mainHub" class="hidden min-h-screen relative z-10">
+        <!-- Header -->
+        <header class="bg-gray-800/90 backdrop-blur-lg border-b border-cyan-500/30 p-4 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-6">
+                    <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 nexus-font">ENGAGE ACADEMY</h1>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-cyan-400 rounded-full flex items-center justify-center">
+                            <span class="text-xs font-bold text-gray-900">🔥</span>
+                        </div>
+                        <span class="text-cyan-300 font-semibold" id="welcomeText">Welcome back!</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-8">
+                    <!-- Level & XP -->
+                    <div class="flex items-center space-x-3">
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 nexus-font" id="levelDisplay">LVL 1</div>
+                            <div class="text-xs text-gray-400">SCHOLAR</div>
+                        </div>
+                        <div class="w-40 h-4 bg-gray-700 rounded-full overflow-hidden border border-cyan-500/30">
+                            <div class="xp-bar h-full w-0 transition-all duration-1000" id="xpBar"></div>
+                        </div>
+                        <span class="text-sm text-cyan-400 font-semibold" id="xpDisplay">0/100 XP</span>
+                    </div>
+                    
+                    <!-- Coins -->
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 coin-3d flex items-center justify-center text-sm font-bold text-gray-900">💰</div>
+                        <span class="text-yellow-400 font-bold text-lg nexus-font" id="coinsDisplay">0</span>
+                    </div>
+                    
+                    <!-- Streak -->
+                    <div class="flex items-center space-x-2">
+                        <div class="streak-fire text-2xl">🔥</div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-orange-400 nexus-font" id="streakDisplay">0</div>
+                            <div class="text-xs text-gray-400">STREAK</div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="logout()" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Character & Progress Panel -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Character Evolution -->
+                <div class="bg-gray-800/90 backdrop-blur-lg rounded-2xl p-6 border border-cyan-500/30">
+                    <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-4 nexus-font">YOUR PROGRESS</h3>
+                    <div class="text-center">
+                        <div class="character-flame mx-auto mb-4" id="playerFlame"></div>
+                        <h4 class="text-white font-bold text-lg" id="characterName">Scholar</h4>
+                        <p class="text-cyan-400 text-sm mb-4" id="characterTitle">Learning Explorer</p>
+                        
+                        <div class="grid grid-cols-2 gap-2 mb-4">
+                            <div class="bg-gray-700/50 p-2 rounded-lg text-center">
+                                <div class="text-lg font-bold text-cyan-400" id="totalGames">0</div>
+                                <div class="text-xs text-gray-400">Games</div>
+                            </div>
+                            <div class="bg-gray-700/50 p-2 rounded-lg text-center">
+                                <div class="text-lg font-bold text-purple-400" id="totalBadges">0</div>
+                                <div class="text-xs text-gray-400">Badges</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <button onclick="openCustomization()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white py-3 rounded-xl transition-all transform hover:scale-105 font-semibold">
+                            🎨 Customize
+                        </button>
+                        <button onclick="openAchievements()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white py-3 rounded-xl transition-all transform hover:scale-105 font-semibold">
+                            🏆 Achievements
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Badges Showcase -->
+                <div class="bg-gray-800/90 backdrop-blur-lg rounded-2xl p-6 border border-cyan-500/30">
+                    <h3 class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 mb-4 nexus-font">RECENT BADGES</h3>
+                    <div class="grid grid-cols-3 gap-3" id="badgesGrid">
+                        <div class="bg-gray-700/50 p-3 rounded-lg text-center opacity-50">
+                            <div class="text-2xl mb-1">🔒</div>
+                            <div class="text-xs text-gray-400">Locked</div>
+                        </div>
+                        <div class="bg-gray-700/50 p-3 rounded-lg text-center opacity-50">
+                            <div class="text-2xl mb-1">🔒</div>
+                            <div class="text-xs text-gray-400">Locked</div>
+                        </div>
+                        <div class="bg-gray-700/50 p-3 rounded-lg text-center opacity-50">
+                            <div class="text-2xl mb-1">🔒</div>
+                            <div class="text-xs text-gray-400">Locked</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Challenges -->
+                <div class="bg-gray-800/90 backdrop-blur-lg rounded-2xl p-6 border border-cyan-500/30">
+                    <h3 class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400 mb-4 nexus-font">DAILY GOALS</h3>
+                    <div class="space-y-3" id="dailyChallenges">
+                        <div class="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-sm">📚</div>
+                                <div>
+                                    <div class="text-white text-sm font-semibold">Complete 3 Games</div>
+                                    <div class="text-gray-400 text-xs">Progress: 0/3</div>
+                                </div>
+                            </div>
+                            <div class="text-yellow-400 text-sm font-bold">+50 XP</div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-sm">⚡</div>
+                                <div>
+                                    <div class="text-white text-sm font-semibold">Perfect Score</div>
+                                    <div class="text-gray-400 text-xs">Get 100% on any game</div>
+                                </div>
+                            </div>
+                            <div class="text-yellow-400 text-sm font-bold">+100 XP</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Games Grid -->
+            <div class="lg:col-span-3">
+                <div class="mb-6">
+                    <h2 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 nexus-font mb-2">LEARNING GAMES</h2>
+                    <p class="text-gray-300">Master 8th Grade ELA Standards Through Interactive Challenges</p>
+                </div>
+
+                <!-- Quick Stats Bar -->
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 border border-cyan-500/30 text-center">
+                        <div class="text-2xl font-bold text-cyan-400 nexus-font" id="todayXP">0</div>
+                        <div class="text-sm text-gray-400">Today's XP</div>
+                    </div>
+                    <div class="bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 border border-purple-500/30 text-center">
+                        <div class="text-2xl font-bold text-purple-400 nexus-font" id="weekStreak">0</div>
+                        <div class="text-sm text-gray-400">Week Streak</div>
+                    </div>
+                    <div class="bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 border border-green-500/30 text-center">
+                        <div class="text-2xl font-bold text-green-400 nexus-font" id="accuracy">0%</div>
+                        <div class="text-sm text-gray-400">Accuracy</div>
+                    </div>
+                    <div class="bg-gray-800/90 backdrop-blur-lg rounded-xl p-4 border border-yellow-500/30 text-center">
+                        <div class="text-2xl font-bold text-yellow-400 nexus-font" id="rank">#--</div>
+                        <div class="text-sm text-gray-400">Class Rank</div>
+                    </div>
+                </div>
+
+                <!-- Games Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="gamesGrid">
+                    <!-- Theme Analysis Challenge -->
+                    <div class="game-card rounded-2xl p-6 cursor-pointer group" onclick="launchGame('themeAnalysis')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-4xl group-hover:scale-110 transition-transform">📖</div>
+                            <div class="text-right">
+                                <div class="text-xs text-green-400 bg-green-900/50 px-3 py-1 rounded-full font-bold">+35 XP</div>
+                                <div class="text-xs text-yellow-400 mt-1 font-semibold">+25 Coins</div>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2 nexus-font">THEME ANALYSIS</h3>
+                        <p class="text-gray-300 text-sm mb-4">Analyze how themes develop through character actions, dialogue, and plot events in literary passages.</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-cyan-400 bg-cyan-900/50 px-3 py-1 rounded-full font-semibold">8.RL.1.A</span>
+                            <span class="text-xs text-gray-400">⏱️ 15 min</span>
+                        </div>
+                    </div>
+
+                    <!-- Character Development -->
+                    <div class="game-card rounded-2xl p-6 cursor-pointer group" onclick="launchGame('characterDev')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-4xl group-hover:scale-110 transition-transform">👥</div>
+                            <div class="text-right">
+                                <div class="text-xs text-green-400 bg-green-900/50 px-3 py-1 rounded-full font-bold">+40 XP</div>
+                                <div class="text-xs text-yellow-400 mt-1 font-semibold">+30 Coins</div>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2 nexus-font">CHARACTER ANALYSIS</h3>
+                        <p class="text-gray-300 text-sm mb-4">Examine complex characters and how they develop, interact, and advance the plot or theme.</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-purple-400 bg-purple-900/50 px-3 py-1 rounded-full font-semibold">8.RL.1.C</span>
+                            <span class="text-xs text-gray-400">⏱️ 18 min</span>
+                        </div>
+                    </div>
+
+                    <!-- Vocabulary Builder -->
+                    <div class="game-card rounded-2xl p-6 cursor-pointer group" onclick="launchGame('vocabBuilder')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-4xl group-hover:scale-110 transition-transform">💎</div>
+                            <div class="text-right">
+                                <div class="text-xs text-green-400 bg-green-900/50 px-3 py-1 rounded-full font-bold">+30 XP</div>
+                                <div class="text-xs text-yellow-400 mt-1 font-semibold">+20 Coins</div>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2 nexus-font">VOCABULARY MASTER</h3>
+                        <p class="text-gray-300 text-sm mb-4">Build academic vocabulary using context clues, Greek/Latin roots, and word relationships.</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-orange-400 bg-orange-900/50 px-3 py-1 rounded-full font-semibold">8.RV.1.A-C</span>
+                            <span class="text-xs text-gray-400">⏱️ 12 min</span>
+                        </div>
+                    </div>
+
+                    <!-- Writing Workshop -->
+                    <div class="game-card rounded-2xl p-6 cursor-pointer group" onclick="launchGame('writingWorkshop')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-4xl group-hover:scale-110 transition-transform">✍️</div>
+                            <div class="text-right">
+                                <div class="text-xs text-green-400 bg-green-900/50 px-3 py-1 rounded-full font-bold">+45 XP</div>
+                                <div class="text-xs text-yellow-400 mt-1 font-semibold">+35 Coins</div>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2 nexus-font">WRITING WORKSHOP</h3>
+                        <p class="text-gray-300 text-sm mb-4">Practice thesis development, organization, and reflective responses with textual evidence.</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-red-400 bg-red-900/50 px-3 py-1 rounded-full font-semibold">8.W.1.D, 8.W.2.A</span>
+                            <span class="text-xs text-gray-400">⏱️ 25 min</span>
+                        </div>
+                    </div>
+
+                    <!-- Grammar & Language -->
+                    <div class="game-card rounded-2xl p-6 cursor-pointer group" onclick="launchGame('grammarChallenge')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-4xl group-hover:scale-110 transition-transform">⚔️</div>
+                            <div class="text-right">
+                                <div class="text-xs text-green-400 bg-green-900/50 px-3 py-1 rounded-full font-bold">+25 XP</div>
+                                <div class="text-xs text-yellow-400 mt-1 font-semibold">+15 Coins</div>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2 nexus-font">GRAMMAR CHALLENGE</h3>
+                        <p class="text-gray-300 text-sm mb-4">Master sentence structure, verb tense consistency, and punctuation rules.</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-teal-400 bg-teal-900/50 px-3 py-1 rounded-full font-semibold">8.LU.1.E, 8.LU.2.A</span>
+                            <span class="text-xs text-gray-400">⏱️ 10 min</span>
+                        </div>
+                    </div>
+
+                    <!-- Research & Citations -->
+                    <div class="game-card rounded-2xl p-6 cursor-pointer group" onclick="launchGame('researchQuest')">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-4xl group-hover:scale-110 transition-transform">🔍</div>
+                            <div class="text-right">
+                                <div class="text-xs text-green-400 bg-green-900/50 px-3 py-1 rounded-full font-bold">+50 XP</div>
+                                <div class="text-xs text-yellow-400 mt-1 font-semibold">+40 Coins</div>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2 nexus-font">RESEARCH QUEST</h3>
+                        <p class="text-gray-300 text-sm mb-4">Learn to evaluate sources, cite evidence properly, and conduct ethical research.</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-pink-400 bg-pink-900/50 px-3 py-1 rounded-full font-semibold">8.R.1.F-G</span>
+                            <span class="text-xs text-gray-400">⏱️ 20 min</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Section -->
+                <div class="mt-8 bg-gray-800/90 backdrop-blur-lg rounded-2xl p-6 border border-cyan-500/30">
+                    <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 mb-4 nexus-font">🏆 CLASS LEADERBOARD</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl border border-yellow-500/30">
+                            <div class="flex items-center space-x-4">
+                                <div class="text-2xl">👑</div>
+                                <div>
+                                    <div class="text-white font-bold">Sarah Chen</div>
+                                    <div class="text-yellow-400 text-sm">Level 12 • Master Scholar</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-yellow-400 font-bold text-lg">2,847 XP</div>
+                                <div class="text-gray-400 text-sm">15-day streak</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-gray-700/30 rounded-xl">
+                            <div class="flex items-center space-x-4">
+                                <div class="text-2xl">🥈</div>
+                                <div>
+                                    <div class="text-white font-bold">Marcus Johnson</div>
+                                    <div class="text-gray-400 text-sm">Level 10 • Advanced Learner</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-cyan-400 font-bold text-lg">2,156 XP</div>
+                                <div class="text-gray-400 text-sm">8-day streak</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-gray-700/30 rounded-xl">
+                            <div class="flex items-center space-x-4">
+                                <div class="text-2xl">🥉</div>
+                                <div>
+                                    <div class="text-white font-bold">Emma Rodriguez</div>
+                                    <div class="text-gray-400 text-sm">Level 9 • Scholar</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-purple-400 font-bold text-lg">1,923 XP</div>
+                                <div class="text-gray-400 text-sm">12-day streak</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="hidden min-h-screen game-screen relative z-10">
+        <!-- Game Header -->
+        <header class="bg-gray-800/90 backdrop-blur-lg border-b border-cyan-500/30 p-4">
+            <div class="max-w-4xl mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button onclick="exitGame()" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </button>
+                    <h2 class="text-2xl font-bold text-white nexus-font" id="gameScreenTitle">Loading Game...</h2>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <!-- Progress Circle -->
+                    <div class="relative w-16 h-16">
+                        <svg class="progress-ring w-16 h-16">
+                            <circle class="progress-ring-circle stroke-cyan-400" stroke-width="4" fill="transparent" r="40" cx="32" cy="32"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-white font-bold text-sm" id="questionProgress">1/10</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Timer -->
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-orange-400 nexus-font" id="gameTimer">15:00</div>
+                        <div class="text-xs text-gray-400">TIME LEFT</div>
+                    </div>
+                    
+                    <!-- Score -->
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-400 nexus-font" id="gameScore">0</div>
+                        <div class="text-xs text-gray-400">SCORE</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Game Content -->
+        <div class="max-w-4xl mx-auto p-6">
+            <div class="question-card rounded-2xl p-8 mb-6">
+                <div class="mb-6">
+                    <div class="text-sm text-cyan-400 mb-2" id="questionStandard">Standard: 8.RL.1.A</div>
+                    <h3 class="text-xl font-bold text-white mb-4" id="questionTitle">Question Loading...</h3>
+                    <div class="text-gray-300 leading-relaxed" id="questionContent">
+                        <p>Loading question content...</p>
+                    </div>
+                </div>
+                
+                <div class="space-y-3" id="answerOptions">
+                    <!-- Answer options will be populated by JavaScript -->
+                </div>
+                
+                <div class="mt-6 flex justify-between items-center">
+                    <button onclick="previousQuestion()" id="prevBtn" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-3 rounded-xl transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                        Previous
+                    </button>
+                    <div class="text-sm text-gray-400">
+                        Question <span id="currentQuestionNum">1</span> of <span id="totalQuestions">10</span>
+                    </div>
+                    <button onclick="nextQuestion()" id="nextBtn" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white px-6 py-3 rounded-xl transition-all font-semibold">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Results Modal -->
+    <div id="resultsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800/95 backdrop-blur-lg rounded-3xl p-8 max-w-lg w-full border border-cyan-500/30 nexus-glow">
+            <div class="text-center mb-6">
+                <div class="text-6xl mb-4" id="resultsIcon">🎉</div>
+                <h3 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 nexus-font mb-2">MISSION COMPLETE!</h3>
+                <p class="text-gray-300" id="resultsMessage">Great job on completing the challenge!</p>
+            </div>
+            
+            <div class="space-y-4 mb-6">
+                <div class="bg-gray-700/50 p-6 rounded-2xl border border-gray-600/30">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <div class="text-3xl font-bold text-green-400 nexus-font" id="finalScore">0/10</div>
+                            <div class="text-sm text-gray-400">Score</div>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-cyan-400 nexus-font" id="earnedXP">+0</div>
+                            <div class="text-sm text-gray-400">XP Earned</div>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-yellow-400 nexus-font" id="earnedCoins">+0</div>
+                            <div class="text-sm text-gray-400">Coins</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-purple-900/30 p-4 rounded-xl border border-purple-500/30" id="badgeSection">
+                    <div class="text-center">
+                        <div class="text-purple-400 font-semibold mb-2">Badge Earned!</div>
+                        <div class="text-4xl" id="earnedBadge">🏆</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex space-x-4">
+                <button onclick="playAgain()" class="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white py-4 rounded-xl transition-all transform hover:scale-105 font-bold nexus-font">
+                    PLAY AGAIN
+                </button>
+                <button onclick="returnToHub()" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white py-4 rounded-xl transition-all transform hover:scale-105 font-bold nexus-font">
+                    RETURN TO HUB
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification System -->
+    <div id="notifications" class="fixed top-20 right-4 space-y-2 z-50"></div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdc5qM71Ry6w8RfD7v-e3FXht2X1oDKms",
+            authDomain: "engage-academy-168cb.firebaseapp.com",
+            projectId: "engage-academy-168cb",
+            storageBucket: "engage-academy-168cb.firebasestorage.app",
+            messagingSenderId: "245148633200",
+            appId: "1:245148633200:web:cbadd364599aa1ed910cb5",
+            measurementId: "G-RSQ60KVLBE"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentUser = null;
+        let currentGame = null;
+        let gameData = null;
+        let currentQuestionIndex = 0;
+        let gameTimer = null;
+        let timeRemaining = 0;
+        let gameScore = 0;
+        let selectedAnswers = [];
+        
+        let playerData = {
+            level: 1,
+            xp: 0,
+            maxXp: 100,
+            coins: 0,
+            streak: 0,
+            badges: [],
+            gamesPlayed: 0,
+            totalXP: 0,
+            accuracy: 0,
+            lastLogin: null
+        };
+
+        // Demo data for offline functionality
+        const demoUsers = {
+            'demo@engage.academy': {
+                email: 'demo@engage.academy',
+                name: 'Alex Nova',
+                ...playerData,
+                level: 5,
+                xp: 350,
+                maxXp: 600,
+                coins: 1250,
+                streak: 7,
+                badges: ['🏆', '⚡', '🛡️'],
+                gamesPlayed: 23,
+                totalXP: 2847,
+                accuracy: 87
+            }
+        };
+
+        // Game Questions Database
+        const gameQuestions = {
+            themeAnalysis: {
+                title: 'THEME ANALYSIS',
+                standard: '8.RL.1.A',
+                timeLimit: 15,
+                xpReward: 35,
+                coinReward: 25,
+                questions: [
+                    {
+                        passage: "Maya had always been afraid of speaking up in class. But when she saw her classmate being bullied, something inside her changed. She stood up, walked over to the bully, and said firmly, 'That's enough. Leave him alone.' The bully, surprised by her confidence, backed down. Maya realized that sometimes you have to find your voice to protect others.",
+                        question: "What theme is developing through Maya's actions in this passage?",
+                        options: [
+                            "Friendship is more important than popularity",
+                            "Finding courage to stand up for what's right",
+                            "School can be a difficult place for students",
+                            "Bullies are always cowards deep down"
+                        ],
+                        correct: 1,
+                        explanation: "The theme of finding courage develops through Maya's transformation from being afraid to speak up to confidently defending someone else."
+                    },
+                    {
+                        passage: "Every morning, Elena's grandmother would tell her stories about their family's journey to America. 'Remember, mija,' she would say, 'we carry our ancestors' strength within us.' When Elena faced challenges at her new school, she would think of these words and find the determination to keep going.",
+                        question: "How does the dialogue contribute to the theme development?",
+                        options: [
+                            "It shows that grandmothers are wise",
+                            "It reveals the importance of family heritage and inner strength",
+                            "It explains why Elena struggles at school",
+                            "It demonstrates generational differences"
+                        ],
+                        correct: 1,
+                        explanation: "The grandmother's dialogue directly states the theme about carrying ancestral strength, which Elena then applies to overcome her challenges."
+                    },
+                    {
+                        passage: "The old oak tree in the town square had weathered countless storms. Its branches were scarred, some broken, but it still stood tall. The townspeople often gathered in its shade, finding comfort in its enduring presence. When developers wanted to cut it down, the community rallied to save it, recognizing that some things are worth preserving despite their imperfections.",
+                        question: "What theme does the oak tree symbolically represent?",
+                        options: [
+                            "Nature is more important than progress",
+                            "Old things should always be preserved",
+                            "Resilience and enduring strength through adversity",
+                            "Communities should make decisions together"
+                        ],
+                        correct: 2,
+                        explanation: "The oak tree serves as a symbol for resilience - it has weathered storms and bears scars but continues to provide strength and comfort to others."
+                    }
+                ]
+            },
+            characterDev: {
+                title: 'CHARACTER ANALYSIS',
+                standard: '8.RL.1.C',
+                timeLimit: 18,
+                xpReward: 40,
+                coinReward: 30,
+                questions: [
+                    {
+                        passage: "At the beginning of the story, Marcus was known for his quick temper and harsh words. He would lash out at anyone who disagreed with him. However, after his younger sister was hurt in an accident he caused during one of his angry outbursts, Marcus began to change. He started counting to ten before responding, asking others for their opinions, and apologizing when he was wrong.",
+                        question: "How does Marcus's character develop throughout this passage?",
+                        options: [
+                            "He becomes more popular with his friends",
+                            "He learns to control his anger and becomes more thoughtful",
+                            "He becomes afraid to express his opinions",
+                            "He starts to blame others for his problems"
+                        ],
+                        correct: 1,
+                        explanation: "Marcus shows clear character development from being quick-tempered to learning self-control and becoming more considerate of others."
+                    },
+                    {
+                        passage: "Sarah was the type of person who always said yes to everything. She volunteered for every committee, helped with every project, and never turned down a request for help. But she was exhausted and her own work was suffering. When her best friend asked her to help with yet another project, Sarah took a deep breath and said, 'I'm sorry, but I can't take on anything else right now.' It was the first time she had ever said no, and surprisingly, her friend understood completely.",
+                        question: "What internal conflict does Sarah face, and how does she resolve it?",
+                        options: [
+                            "She's torn between helping others and taking care of herself; she learns to set boundaries",
+                            "She doesn't want to help her friend; she decides to be honest about her feelings",
+                            "She's afraid of disappointing people; she decides to work harder",
+                            "She's jealous of her friend's success; she decides to compete with her"
+                        ],
+                        correct: 0,
+                        explanation: "Sarah's internal conflict is between her desire to help everyone and her need for self-care. She resolves it by learning to set healthy boundaries."
+                    },
+                    {
+                        passage: "Detective Rodriguez had solved hundreds of cases through logic and evidence. She prided herself on never letting emotions cloud her judgment. But this case was different - the victim reminded her of her own daughter. As she investigated, she found herself making assumptions based on her feelings rather than facts. Realizing this, she stepped back, took a deep breath, and forced herself to examine only the evidence. In doing so, she discovered the real culprit.",
+                        question: "How do Detective Rodriguez's personal feelings create conflict, and how does she overcome it?",
+                        options: [
+                            "Her emotions help her solve the case faster",
+                            "She lets her feelings guide her to the right answer",
+                            "Her emotions cloud her judgment, but she overcomes this by refocusing on evidence",
+                            "She decides to let someone else handle the case"
+                        ],
+                        correct: 2,
+                        explanation: "The detective's personal connection creates bias that interferes with her usual logical approach, but she recognizes this and returns to evidence-based investigation."
+                    }
+                ]
+            },
+            vocabBuilder: {
+                title: 'VOCABULARY MASTER',
+                standard: '8.RV.1.A-C',
+                timeLimit: 12,
+                xpReward: 30,
+                coinReward: 20,
+                questions: [
+                    {
+                        passage: "The scientist's hypothesis was quite audacious - she claimed that plants could communicate with each other through underground networks. Many of her colleagues were skeptical, but her research provided compelling evidence.",
+                        question: "Based on context clues, what does 'audacious' most likely mean?",
+                        options: [
+                            "Careful and methodical",
+                            "Bold and daring",
+                            "Confusing and unclear",
+                            "Simple and obvious"
+                        ],
+                        correct: 1,
+                        explanation: "The context suggests the hypothesis was bold or daring, as it made colleagues skeptical but was supported by compelling evidence."
+                    },
+                    {
+                        passage: "The word 'biography' comes from the Greek roots 'bio' meaning life and 'graph' meaning to write.",
+                        question: "Using your knowledge of Greek roots, what would 'autobiography' mean?",
+                        options: [
+                            "A book about cars",
+                            "A story written by someone else about your life",
+                            "A story you write about your own life",
+                            "A book about automatic machines"
+                        ],
+                        correct: 2,
+                        explanation: "'Auto' means self, so autobiography means writing about one's own life."
+                    },
+                    {
+                        passage: "The philanthropist donated millions to build schools in underserved communities. Her benevolent actions inspired others to contribute to education as well.",
+                        question: "What is the relationship between 'philanthropist' and 'benevolent'?",
+                        options: [
+                            "They are opposites",
+                            "They are synonyms describing generous, kind behavior",
+                            "One is a cause and the other is an effect",
+                            "They have no relationship"
+                        ],
+                        correct: 1,
+                        explanation: "Both words describe generous, charitable behavior - a philanthropist performs benevolent (kind, generous) actions."
+                    }
+                ]
+            },
+            writingWorkshop: {
+                title: 'WRITING WORKSHOP',
+                standard: '8.W.1.D, 8.W.2.A',
+                timeLimit: 25,
+                xpReward: 45,
+                coinReward: 35,
+                questions: [
+                    {
+                        passage: "Student essay excerpt: 'I think social media is bad for teenagers. It makes them feel bad about themselves. Everyone posts perfect pictures and teenagers think they need to be perfect too.'",
+                        question: "What does this thesis statement need to be more effective?",
+                        options: [
+                            "More personal opinions",
+                            "Specific claims and evidence to support the argument",
+                            "Longer sentences",
+                            "More emotional language"
+                        ],
+                        correct: 1,
+                        explanation: "An effective thesis needs specific, arguable claims that can be supported with evidence, not just general statements."
+                    },
+                    {
+                        passage: "Read this student's reflective response: 'The character in the story reminded me of my brother. My brother is stubborn too. The character learned to listen to others, which is something my brother should do.'",
+                        question: "How could this reflective response be improved with textual evidence?",
+                        options: [
+                            "Add more personal stories about the brother",
+                            "Include specific quotes or examples from the text that show the character's stubbornness and growth",
+                            "Make it longer with more details",
+                            "Remove the personal connection entirely"
+                        ],
+                        correct: 1,
+                        explanation: "Reflective responses should connect personal experiences to specific textual evidence to support the analysis."
+                    },
+                    {
+                        passage: "Student conclusion: 'In conclusion, I have proved that school uniforms are good. They help students focus and save money. Schools should have uniforms.'",
+                        question: "What would make this conclusion more effective?",
+                        options: [
+                            "Repeat the entire essay",
+                            "Add new arguments not mentioned before",
+                            "Synthesize the main points and explain their broader significance",
+                            "Make it much shorter"
+                        ],
+                        correct: 2,
+                        explanation: "Effective conclusions synthesize main points and explain their broader significance rather than just restating arguments."
+                    }
+                ]
+            },
+            grammarChallenge: {
+                title: 'GRAMMAR CHALLENGE',
+                standard: '8.LU.1.E, 8.LU.2.A',
+                timeLimit: 10,
+                xpReward: 25,
+                coinReward: 15,
+                questions: [
+                    {
+                        passage: "Choose the sentence with consistent verb tense:",
+                        question: "Which sentence maintains consistent verb tense?",
+                        options: [
+                            "Yesterday, I walked to school and see my friend.",
+                            "Yesterday, I walked to school and saw my friend.",
+                            "Yesterday, I walk to school and saw my friend.",
+                            "Yesterday, I will walk to school and saw my friend."
+                        ],
+                        correct: 1,
+                        explanation: "Both verbs 'walked' and 'saw' are in past tense, maintaining consistency."
+                    },
+                    {
+                        passage: "Identify the complete sentence:",
+                        question: "Which option is a complete sentence with proper punctuation?",
+                        options: [
+                            "Running through the park.",
+                            "Because it was raining heavily.",
+                            "The students studied hard for their exam.",
+                            "After the game ended and everyone went home."
+                        ],
+                        correct: 2,
+                        explanation: "This sentence has a subject (students) and predicate (studied hard for their exam) and expresses a complete thought."
+                    },
+                    {
+                        passage: "Choose the sentence with correct punctuation:",
+                        question: "Which sentence is punctuated correctly?",
+                        options: [
+                            "The teacher said, 'Please turn in your homework.'",
+                            "The teacher said, \"Please turn in your homework.",
+                            "The teacher said 'Please turn in your homework'.",
+                            "The teacher said, Please turn in your homework."
+                        ],
+                        correct: 0,
+                        explanation: "Direct quotes require quotation marks at the beginning and end, with proper comma placement."
+                    }
+                ]
+            },
+            researchQuest: {
+                title: 'RESEARCH QUEST',
+                standard: '8.R.1.F-G',
+                timeLimit: 20,
+                xpReward: 50,
+                coinReward: 40,
+                questions: [
+                    {
+                        passage: "You found this information online: 'Climate change is definitely caused by solar flares, not human activity. This is obvious to anyone with common sense.' The website has no author listed and no sources cited.",
+                        question: "What makes this source unreliable?",
+                        options: [
+                            "It disagrees with popular opinion",
+                            "It lacks credible authorship, sources, and uses biased language",
+                            "It's too short",
+                            "It's about a controversial topic"
+                        ],
+                        correct: 1,
+                        explanation: "Reliable sources need credible authors, citations, and objective language rather than opinion-based claims."
+                    },
+                    {
+                        passage: "You want to cite this book in MLA format: 'The Power of Reading' by Dr. Sarah Johnson, published by Academic Press in 2023.",
+                        question: "What is the correct MLA citation?",
+                        options: [
+                            "Johnson, Sarah. The Power of Reading. Academic Press, 2023.",
+                            "Dr. Sarah Johnson. 'The Power of Reading.' Academic Press. 2023.",
+                            "Johnson, Sarah. The Power of Reading. Academic Press, 2023.",
+                            "Sarah Johnson, The Power of Reading, Academic Press, 2023."
+                        ],
+                        correct: 0,
+                        explanation: "MLA format: Author's last name, first name. Title in italics. Publisher, year."
+                    },
+                    {
+                        passage: "You found a perfect paragraph online that supports your argument. You're tempted to copy it directly into your essay.",
+                        question: "What is the ethical way to use this information?",
+                        options: [
+                            "Copy it exactly since it's perfect",
+                            "Change a few words so it's not exactly the same",
+                            "Paraphrase the ideas in your own words and cite the source",
+                            "Use it without citation since many people have the same ideas"
+                        ],
+                        correct: 2,
+                        explanation: "Ethical research requires paraphrasing ideas in your own words while properly citing the original source."
+                    }
+                ]
+            }
+        };
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification bg-gray-800 border-l-4 ${type === 'success' ? 'border-green-500' : 'border-red-500'} p-4 rounded-lg shadow-lg max-w-sm`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <div class="text-2xl mr-3">${type === 'success' ? '✅' : '❌'}</div>
+                    <div class="text-white font-semibold">${message}</div>
+                </div>
+            `;
+            
+            document.getElementById('notifications').appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        async function register() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            try {
+                // Firebase Authentication
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                currentUser = userCredential.user;
+                
+                // Create user profile in Firestore
+                await db.collection('users').doc(currentUser.uid).set({
+                    email: currentUser.email,
+                    name: currentUser.email.split('@')[0],
+                    ...playerData,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showNotification('Account created successfully! You can now sign in.');
+                
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    showNotification('Email already registered. Try signing in instead.', 'error');
+                } else if (error.code === 'auth/weak-password') {
+                    showNotification('Password is too weak. Use at least 6 characters.', 'error');
+                } else if (error.code === 'auth/invalid-email') {
+                    showNotification('Please enter a valid email address.', 'error');
+                } else {
+                    showNotification('Registration failed: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showNotification('Please enter email and password', 'error');
+                return;
+            }
+
+            try {
+                // Firebase Authentication
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                currentUser = userCredential.user;
+                
+                // Load user data from Firestore
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (userDoc.exists) {
+                    playerData = { ...playerData, ...userDoc.data() };
+                } else {
+                    // First time user - create profile
+                    await db.collection('users').doc(currentUser.uid).set({
+                        email: currentUser.email,
+                        name: currentUser.email.split('@')[0],
+                        ...playerData,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainHub').classList.remove('hidden');
+                
+                updateUI();
+                showNotification(`Welcome back, ${playerData.name || currentUser.email.split('@')[0]}!`);
+                
+            } catch (error) {
+                // Fallback to demo for development
+                if (demoUsers[email] && (password === 'demo123' || password === 'demo')) {
+                    currentUser = demoUsers[email];
+                    playerData = { ...currentUser };
+                    
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainHub').classList.remove('hidden');
+                    
+                    updateUI();
+                    showNotification(`Welcome back, ${currentUser.name}! (Demo Mode)`);
+                } else {
+                    showNotification('Login failed: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            playerData = {
+                level: 1,
+                xp: 0,
+                maxXp: 100,
+                coins: 0,
+                streak: 0,
+                badges: [],
+                gamesPlayed: 0,
+                totalXP: 0,
+                accuracy: 0
+            };
+            
+            document.getElementById('mainHub').classList.add('hidden');
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('email').value = 'demo@engage.academy';
+            document.getElementById('password').value = 'demo123';
+        }
+
+        function updateUI() {
+            if (!currentUser) return;
+            
+            // Update header displays
+            document.getElementById('welcomeText').textContent = `Welcome back, ${currentUser.name}!`;
+            document.getElementById('levelDisplay').textContent = `LVL ${playerData.level}`;
+            document.getElementById('xpDisplay').textContent = `${playerData.xp}/${playerData.maxXp} XP`;
+            document.getElementById('coinsDisplay').textContent = playerData.coins.toLocaleString();
+            document.getElementById('streakDisplay').textContent = playerData.streak;
+            
+            // Update XP bar
+            const xpPercentage = (playerData.xp / playerData.maxXp) * 100;
+            document.getElementById('xpBar').style.width = `${xpPercentage}%`;
+            
+            // Update character
+            updateCharacterFlame();
+            
+            // Update stats
+            document.getElementById('totalGames').textContent = playerData.gamesPlayed;
+            document.getElementById('totalBadges').textContent = playerData.badges.length;
+            document.getElementById('todayXP').textContent = playerData.totalXP;
+            document.getElementById('weekStreak').textContent = playerData.streak;
+            document.getElementById('accuracy').textContent = `${playerData.accuracy}%`;
+            document.getElementById('rank').textContent = '#2';
+            
+            // Update character info
+            const titles = ['Learning Explorer', 'Knowledge Seeker', 'Skill Builder', 'Scholar', 'Advanced Learner', 'Master Scholar'];
+            document.getElementById('characterName').textContent = currentUser.name;
+            document.getElementById('characterTitle').textContent = titles[Math.min(playerData.level - 1, titles.length - 1)];
+        }
+
+        function updateCharacterFlame() {
+            const flame = document.getElementById('playerFlame');
+            flame.className = 'character-flame mx-auto mb-4';
+            
+            if (playerData.level >= 5) {
+                flame.classList.add('level-5');
+            } else if (playerData.level >= 3) {
+                flame.classList.add('level-3');
+            } else if (playerData.level >= 2) {
+                flame.classList.add('level-2');
+            }
+        }
+
+        function launchGame(gameId) {
+            if (!gameQuestions[gameId]) {
+                showNotification('Game not available yet!', 'error');
+                return;
+            }
+            
+            currentGame = gameId;
+            gameData = gameQuestions[gameId];
+            currentQuestionIndex = 0;
+            gameScore = 0;
+            selectedAnswers = [];
+            timeRemaining = gameData.timeLimit * 60; // Convert to seconds
+            
+            // Hide hub, show game screen
+            document.getElementById('mainHub').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            
+            // Initialize game UI
+            document.getElementById('gameScreenTitle').textContent = gameData.title;
+            document.getElementById('totalQuestions').textContent = gameData.questions.length;
+            
+            // Start timer
+            startGameTimer();
+            
+            // Load first question
+            loadQuestion();
+            
+            showNotification(`🚀 Starting ${gameData.title}...`);
+        }
+
+        function startGameTimer() {
+            gameTimer = setInterval(() => {
+                timeRemaining--;
+                
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                document.getElementById('gameTimer').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(gameTimer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function loadQuestion() {
+            const question = gameData.questions[currentQuestionIndex];
+            
+            // Update progress
+            document.getElementById('questionProgress').textContent = 
+                `${currentQuestionIndex + 1}/${gameData.questions.length}`;
+            document.getElementById('currentQuestionNum').textContent = currentQuestionIndex + 1;
+            
+            // Update progress circle
+            const progress = ((currentQuestionIndex + 1) / gameData.questions.length) * 100;
+            const circle = document.querySelector('.progress-ring-circle');
+            const circumference = 2 * Math.PI * 40;
+            const offset = circumference - (progress / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+            
+            // Load question content
+            document.getElementById('questionStandard').textContent = `Standard: ${gameData.standard}`;
+            document.getElementById('questionTitle').textContent = question.question;
+            document.getElementById('questionContent').innerHTML = 
+                question.passage ? `<p class="mb-4 p-4 bg-gray-700/30 rounded-lg italic">"${question.passage}"</p>` : '';
+            
+            // Load answer options
+            const optionsContainer = document.getElementById('answerOptions');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const optionEl = document.createElement('button');
+                optionEl.className = 'answer-option w-full p-4 rounded-xl text-left transition-all';
+                optionEl.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold">
+                            ${String.fromCharCode(65 + index)}
+                        </div>
+                        <div class="text-white">${option}</div>
+                    </div>
+                `;
+                optionEl.onclick = () => selectAnswer(index, optionEl);
+                optionsContainer.appendChild(optionEl);
+            });
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentQuestionIndex === 0;
+            document.getElementById('nextBtn').textContent = 
+                currentQuestionIndex === gameData.questions.length - 1 ? 'Finish' : 'Next';
+        }
+
+        function selectAnswer(answerIndex, optionEl) {
+            // Clear previous selections
+            document.querySelectorAll('.answer-option').forEach(el => {
+                el.classList.remove('bg-blue-600/30', 'border-blue-500');
+            });
+            
+            // Highlight selected answer
+            optionEl.classList.add('bg-blue-600/30', 'border-blue-500');
+            
+            // Store answer
+            selectedAnswers[currentQuestionIndex] = answerIndex;
+        }
+
+        function nextQuestion() {
+            if (selectedAnswers[currentQuestionIndex] === undefined) {
+                showNotification('Please select an answer', 'error');
+                return;
+            }
+            
+            // Check if answer is correct
+            const question = gameData.questions[currentQuestionIndex];
+            if (selectedAnswers[currentQuestionIndex] === question.correct) {
+                gameScore++;
+            }
+            
+            if (currentQuestionIndex < gameData.questions.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+                
+                // Restore previous selection if exists
+                if (selectedAnswers[currentQuestionIndex] !== undefined) {
+                    const options = document.querySelectorAll('.answer-option');
+                    selectAnswer(selectedAnswers[currentQuestionIndex], options[selectedAnswers[currentQuestionIndex]]);
+                }
+            }
+        }
+
+        async function endGame() {
+            clearInterval(gameTimer);
+            
+            // Calculate results
+            const totalQuestions = gameData.questions.length;
+            const percentage = Math.round((gameScore / totalQuestions) * 100);
+            const earnedXP = Math.round(gameData.xpReward * (percentage / 100));
+            const earnedCoins = Math.round(gameData.coinReward * (percentage / 100));
+            
+            // Update player data
+            playerData.xp += earnedXP;
+            playerData.coins += earnedCoins;
+            playerData.gamesPlayed++;
+            playerData.totalXP += earnedXP;
+            
+            // Check for level up
+            while (playerData.xp >= playerData.maxXp) {
+                playerData.level++;
+                playerData.xp -= playerData.maxXp;
+                playerData.maxXp = Math.floor(playerData.maxXp * 1.2);
+                showNotification(`🎉 LEVEL UP! You are now Level ${playerData.level}!`);
+            }
+            
+            // Update accuracy and streak
+            if (percentage >= 70) {
+                playerData.streak = Math.min(playerData.streak + 1, 30);
+                playerData.accuracy = Math.min(playerData.accuracy + 1, 100);
+            }
+            
+            // Save data to Firebase
+            if (currentUser && currentUser.uid) {
+                try {
+                    await db.collection('users').doc(currentUser.uid).update({
+                        ...playerData,
+                        lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch (error) {
+                    console.log('Error saving data:', error);
+                    // Fallback to local storage for demo
+                    if (currentUser.email) {
+                        demoUsers[currentUser.email] = { ...currentUser, ...playerData };
+                    }
+                }
+            }
+            
+            // Show results
+            showResults(gameScore, totalQuestions, earnedXP, earnedCoins, percentage);
+        }
+
+        function showResults(score, total, xp, coins, percentage) {
+            document.getElementById('finalScore').textContent = `${score}/${total}`;
+            document.getElementById('earnedXP').textContent = `+${xp}`;
+            document.getElementById('earnedCoins').textContent = `+${coins}`;
+            
+            // Determine results message and icon
+            let message, icon;
+            if (percentage >= 90) {
+                message = "Outstanding performance! You're a true scholar!";
+                icon = "🏆";
+            } else if (percentage >= 80) {
+                message = "Excellent work! You're mastering these skills!";
+                icon = "🌟";
+            } else if (percentage >= 70) {
+                message = "Good job! Keep practicing to improve!";
+                icon = "👍";
+            } else {
+                message = "Keep learning! Practice makes perfect!";
+                icon = "📚";
+            }
+            
+            document.getElementById('resultsMessage').textContent = message;
+            document.getElementById('resultsIcon').textContent = icon;
+            
+            // Show/hide badge section
+            const badgeSection = document.getElementById('badgeSection');
+            if (percentage >= 80) {
+                badgeSection.classList.remove('hidden');
+                document.getElementById('earnedBadge').textContent = percentage >= 90 ? '🏆' : '⭐';
+            } else {
+                badgeSection.classList.add('hidden');
+            }
+            
+            document.getElementById('resultsModal').classList.remove('hidden');
+        }
+
+        function playAgain() {
+            document.getElementById('resultsModal').classList.add('hidden');
+            launchGame(currentGame);
+        }
+
+        function returnToHub() {
+            document.getElementById('resultsModal').classList.add('hidden');
+            exitGame();
+        }
+
+        function exitGame() {
+            clearInterval(gameTimer);
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('mainHub').classList.remove('hidden');
+            updateUI();
+        }
+
+        function openCustomization() {
+            showNotification('🎨 Character customization coming soon!');
+        }
+
+        function openAchievements() {
+            showNotification('🏆 Achievement gallery coming soon!');
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('email').focus();
+            
+            // Allow Enter key to login
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !document.getElementById('loginScreen').classList.contains('hidden')) {
+                    login();
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97f3bf23e0a3ea22',t:'MTc1Nzg5MzQwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
